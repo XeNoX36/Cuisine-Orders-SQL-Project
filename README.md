@@ -1,11 +1,12 @@
 # Cuisine Orders Analysis SQL-Project
 
 ## Schema
-'''sql
+```sql
 create database sales_report
-'''
+```
 ## Create the orders table
 
+```sql
 drop table orders
 CREATE TABLE orders(
     Order_id VARCHAR(20),
@@ -16,9 +17,11 @@ CREATE TABLE orders(
     Order_status VARCHAR(20),
     Promo_code_Name VARCHAR(20)
 );
+```
 
--- Insert data with multiple restaurants per cuisine
+## Insert data with multiple restaurants per cuisine
 
+```sql
 INSERT INTO orders VALUES ('OF1900191801','UFDDN1991918XUY1','2025-01-01 15:30:20','KMKMH6787','Lebanese','Delivered','Tasty50');
 INSERT INTO orders VALUES ('OF1900191802','UFDDN1991918XUY1','2025-01-02 12:15:45','LEBANESE2','Lebanese','Delivered',null);
 INSERT INTO orders VALUES ('OF1900191803','UFDDN1991918XUY1','2025-01-10 18:45:30','PIZZA123','Italian','Cancelled','HUNGRY20');
@@ -92,11 +95,16 @@ INSERT INTO orders VALUES ('OF1900191870','MULTI_CUISINE_CUST','2025-03-31 14:45
 INSERT INTO orders VALUES ('OF1900191871','DEF9876543210XYZ','2025-03-02 09:15:00','KMKMH6787','Lebanese','Delivered','TASTY50');
 INSERT INTO orders VALUES ('OF1900191872','UVW7890123456JKL','2025-02-25 19:15:00','KMKMH6787','Lebanese','Delivered','TASTY25');
 INSERT INTO orders VALUES ('OF1900191873','UVW7890123456JKL','2025-03-25 19:15:00','PIZZA123','Italian','Delivered','TASTY50');
+```
 
-
+```sql
 select * from orders
+```
+# KPIs
 
--- 1. find the top 3 outlets by cuisine type without using limit and top function
+## 1. find the top 3 outlets by cuisine type without using limit and top function
+
+```sql
 with cte as (
 select cuisine, Restaurant_id, count(*) as no_of_orders
 from orders
@@ -106,9 +114,10 @@ select * from (select *,
 ROW_NUMBER() over(partition by cuisine order by no_of_orders) as row_no
 from cte) row
 where row_no = 1
+```
 
--- find the daily new customer count from the launch date (everyday how many customers are we acquiring)
-
+## find the daily new customer count from the launch date (everyday how many customers are we acquiring)
+```sql
 with cte as (
 select Customer_code, 
 cast(MIN(Placed_at)as date) as first_order_date
@@ -119,10 +128,11 @@ select first_order_date, COUNT(*) as no_of_new_customers
 from cte
 group by first_order_date
 order by first_order_date
+```
 
--- count of the users who were acquired in jan 2025 and only placed one order in jan
--- and did not place any other order 
+## count of the users who were acquired in jan 2025 and only placed one order in jan and did not place any other order
 
+ ```sql
 with cte as(
 select Customer_code, count(*) as No_of_orders
 from orders
@@ -138,8 +148,9 @@ select *
 from cte
 where No_of_orders = 1
 group by Customer_code, No_of_orders
-
+```
 -- or
+```sql
 select Customer_code, count(*) as No_of_orders
 from orders
 where MONTH(Placed_at) = 1 and YEAR(Placed_at) = 2025
@@ -150,10 +161,10 @@ where not MONTH(Placed_at) = 1 and YEAR(Placed_at) = 2025
 )
 group by Customer_code
 having count(*) = 1
+```
 
--- list all the customers with no order in the last 7 days but were
--- acquired one month ago with their first order on promo
-
+## list all the customers with no order in the last 7 days but were acquired one month ago with their first order on promo
+```sql
 with cte as(
 select customer_code, MIN(placed_at) as first_order_date,
 MAX(placed_at) as latest_order_date
@@ -166,10 +177,11 @@ where latest_order_date < DATEADD(DAY, -7, getdate())
 and first_order_date < DATEADD(MONTH, -1, getdate())
 and orders.Promo_code_Name is not null
 -- this dates were last functional at 2025-03-31
+```
 
--- 5. growth team is plannning to create a trigger that will target customers after their
--- every third order with a personalized communication and they have asked me to
--- create a query for this
+## 5. growth team is plannning to create a trigger that will target customers after their every third order with a personalized communication and they have asked me to create a query for this
+
+```sql
 with cte as(
 select *,
 ROW_NUMBER() over(partition by customer_code order by placed_at) as order_number
@@ -179,24 +191,21 @@ select *
 from cte
 where order_number%3=0
 and CAST(placed_at as date) = CAST(GETDATE() as date)
+```
 
--- 6. list customers who placed more than 1 order and all their orders on a promo only
+## 6. list customers who placed more than 1 order and all their orders on a promo only
 
-select Customer_code, COUNT(*) as No_of_orders
-from orders
-where Promo_code_Name is not null
-group by Customer_code
-having COUNT(*) > 1
--- wrong because UFDD... made orders that were not only on promo
-
+```sql
 select Customer_code, COUNT(*) as No_of_orders, 
 COUNT(Promo_code_Name) as Promo_orders
 from orders
 group by Customer_code
 having COUNT(*) > 1 and COUNT(*) = COUNT(Promo_code_Name)
+```
 
--- 7. what percent of customers were organically acquired in jan 2025. 
--- (placed their first order without promo code)
+## 7. what percent of customers were organically acquired in jan 2025. (placed their first order without promo code)
+
+```sql
 with cte as(
 select *,
 ROW_NUMBER() over(partition by customer_code order by placed_at) as rn
@@ -207,3 +216,4 @@ select
 concat(count(case when rn = 1 and Promo_code_Name is null then Customer_code end)*100.00/
 count(distinct Customer_code), ' %') as Percentages
 from cte;
+```
