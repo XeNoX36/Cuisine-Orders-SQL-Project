@@ -1,10 +1,10 @@
 # Cuisine Orders Analysis SQL-Project
 
 ## Schema
-
+'''sql
 create database sales_report
-
--- Create the orders table
+'''
+## Create the orders table
 
 drop table orders
 CREATE TABLE orders(
