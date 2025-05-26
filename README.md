@@ -18,6 +18,7 @@ CREATE TABLE orders(
     Promo_code_Name VARCHAR(20)
 );
 ```
+![Visuals]()
 
 ## Insert data with multiple restaurants per cuisine
 
